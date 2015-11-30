@@ -20,11 +20,20 @@
             android:textStyle="bold"/>
 
         <TextView
+            android:id="@+id/device_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:paddingTop="16dp"
             android:layout_gravity="center"
-            android:text="Center"/>
+            android:text="Device Name"/>
+
+        <TextView
+            android:id="@+id/device_signal"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingTop="4dp"
+            android:layout_gravity="center"
+            android:text="Device Signal"/>
     </>
 
 </FrameLayout>
