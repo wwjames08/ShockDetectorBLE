@@ -34,6 +34,5 @@
             android:paddingTop="4dp"
             android:layout_gravity="center"
             android:text="Device Signal"/>
-    </>
-
+    </LinearLayout>
 </FrameLayout>

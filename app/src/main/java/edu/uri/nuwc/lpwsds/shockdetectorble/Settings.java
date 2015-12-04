@@ -10,26 +10,25 @@ import android.view.Menu;
 import android.view.View;
 import android.widget.NumberPicker;
 
-public class Settings extends Activity {
+public class Settings extends AppCompatActivity {
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_settings);
-        getActionBar().setDisplayHomeAsUpEnabled(true);
-        getActionBar().setHomeButtonEnabled(true);
+        getSupportActionBar().setHomeButtonEnabled(true);
 
         NumberPicker np = (NumberPicker)findViewById(R.id.measurement_value);
         np.setMinValue(1);// restricted number to minimum value i.e 1
         np.setMaxValue(5);// restricted number to maximum value i.e. 5
-        np.setWrapSelectorWheel(true);
+        np.setWrapSelectorWheel(false);
 
     }
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
+        return false;
     }
 
 }
