@@ -14,7 +14,7 @@
         android:text="time_stamp" />
 
     <TextView
-        android:id="shockLevel"
+        android:id="@+id/shockLevel"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
