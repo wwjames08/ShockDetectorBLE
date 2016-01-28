@@ -4,17 +4,17 @@ import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
 
 import java.util.List;
 
-import io.realm.Realm;
+import edu.uri.nuwc.lpwsds.shockdetectorble.database.ShockEvent;
 
 /**
+ * Recyclerview adapter for the event history list
  */
 public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.ViewHolder>{
 
-    private List<EventData> eventDataList = null;
+    private List<ShockEvent> shockEventList = null;
 
     // Provide a reference to the views for each data item
     // Complex data items may need more than one view per item, and
@@ -29,8 +29,8 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.View
     }
 
     // Provide a suitable constructor (depends on the kind of dataset)
-    public EventListAdapter(String[] myDataset) {
-        String[] mDataset = myDataset;
+    public EventListAdapter(List<ShockEvent> shockEventList){
+        this.shockEventList = shockEventList;
     }
 
     // Create new views (invoked by the layout manager)
@@ -45,24 +45,21 @@ public class EventListAdapter extends RecyclerView.Adapter<EventListAdapter.View
     // Replace the contents of a view (invoked by the layout manager)
     @Override
     public void onBindViewHolder(ViewHolder holder, int position) {
-        EventData eventData = eventDataList.get(position);
-
-        if(eventData != null){
-            (TextView) holder.mView.findViewById(R.id.e)
-        }
+//        EventData eventData = eventDataList.get(position);
+//
+//        if(eventData != null){
+//            TextView tv1 = (TextView) holder.mView.findViewById(R.id.timestamp);
+//            TextView tv2 = (TextView) holder.mView.findViewById(R.id.shockLevel);
+//        }
     }
 
     // Return the size of your dataset (invoked by the layout manager)
     @Override
     public int getItemCount() {
-        if(eventDataList == null){
+        if(shockEventList == null){
             return 0;
         }
-        return eventDataList.size();
-    }
-
-    public void setEventDataList(List<EventData> eventDataList){
-        this.eventDataList = eventDataList;
+        return shockEventList.size();
     }
 
 }

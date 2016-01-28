@@ -1,4 +1,4 @@
-package edu.uri.nuwc.lpwsds.shockdetectorble;
+package edu.uri.nuwc.lpwsds.shockdetectorble.database;
 
 import io.realm.RealmObject;
 
