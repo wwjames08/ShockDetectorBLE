@@ -21,11 +21,9 @@ public class ShockEvent extends RealmObject {
     // Holds each data sample for the Shock event
     private RealmList<EventData> eventData;
 
-    // Getter and setter methods
     public String getEventShockLevelPeak() {
         return eventShockLevelPeak;
     }
-
     public void setEventShockLevelPeak(String eventShockLevelPeak) {
         this.eventShockLevelPeak = eventShockLevelPeak;
     }
@@ -33,7 +31,6 @@ public class ShockEvent extends RealmObject {
     public String getEventTimeStampPeak() {
         return eventTimeStampPeak;
     }
-
     public void setEventTimeStampPeak(String eventTimeStampPeak) {
         this.eventTimeStampPeak = eventTimeStampPeak;
     }
@@ -41,7 +38,6 @@ public class ShockEvent extends RealmObject {
     public RealmList<EventData> getEventData() {
         return eventData;
     }
-
     public void setEventData(RealmList<EventData> eventData) {
         this.eventData = eventData;
     }
