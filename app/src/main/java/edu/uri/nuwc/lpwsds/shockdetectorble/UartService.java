@@ -77,7 +77,7 @@ public class UartService extends Service {
     public static final UUID RX_CHAR_UUID = UUID.fromString("6e400002-b5a3-f393-e0a9-e50e24dcca9e");
     public static final UUID TX_CHAR_UUID = UUID.fromString("6e400003-b5a3-f393-e0a9-e50e24dcca9e");
 
-    /* Temperature Service */
+    /* Shock Sensor Service */
     private static final UUID SHOCK_SERVICE = UUID.fromString("f000aa20-0451-4000-b000-000000000000");
     private static final UUID SHOCK_DATA_CHAR = UUID.fromString("f000aa21-0451-4000-b000-000000000000");
     private static final UUID SHOCK_CONFIG_CHAR = UUID.fromString("f000aa22-0451-4000-b000-000000000000");
