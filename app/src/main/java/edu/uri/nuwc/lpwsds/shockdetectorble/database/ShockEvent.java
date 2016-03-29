@@ -18,8 +18,10 @@ public class ShockEvent extends RealmObject {
     private String eventTimeStampPeak;
     private String eventShockLevelPeak;
 
+
+
     // Holds each data sample for the Shock event
-    private RealmList<EventData> eventData;
+//    private EventData eventData;
 
     public String getEventShockLevelPeak() {
         return eventShockLevelPeak;
@@ -35,10 +37,18 @@ public class ShockEvent extends RealmObject {
         this.eventTimeStampPeak = eventTimeStampPeak;
     }
 
-    public RealmList<EventData> getEventData() {
-        return eventData;
-    }
-    public void setEventData(RealmList<EventData> eventData) {
-        this.eventData = eventData;
-    }
+//    public RealmList<EventData> getEventData() {
+//       // EventData
+//        return 0;
+//    }
+//    public EventData getEventData() {
+//        return eventData;
+//    }
+//    public void setEventData(String[] timeStamp, String[] shockLevel) {
+//        for(int i = 0; i<timeStamp.length; i++){
+//            eventData.setTimeStamp(timeStamp[i]);
+//            eventData.setShockLevel(shockLevel[i]);
+//        }
+//
+//    }
 }
