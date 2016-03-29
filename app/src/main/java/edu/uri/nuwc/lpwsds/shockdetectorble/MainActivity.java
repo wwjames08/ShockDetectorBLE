@@ -1,6 +1,5 @@
 package edu.uri.nuwc.lpwsds.shockdetectorble;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -142,6 +141,20 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy(){
         super.onDestroy();
         //realm.close();
+    }
+
+    /* Methods for updating the UI */
+
+    private void updateDeviceStatus(String status){
+        mDeviceStatus.setText(status);
+    }
+
+    private void updateDeviceName(String name){
+        mDeviceName.setText(name);
+    }
+
+    private void updateDeviceSignal(String rssi){
+        mDeviceSignal.setText(rssi);
     }
 
 }
