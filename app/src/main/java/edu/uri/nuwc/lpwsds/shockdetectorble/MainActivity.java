@@ -1,8 +1,8 @@
 package edu.uri.nuwc.lpwsds.shockdetectorble;
 
+import android.app.Activity;
 import android.content.Intent;
 import android.os.Bundle;
-import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.Menu;
@@ -11,7 +11,7 @@ import android.view.MenuItem;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends Activity {
 
     Realm realm;
     private RecyclerView mRecyclerView;
