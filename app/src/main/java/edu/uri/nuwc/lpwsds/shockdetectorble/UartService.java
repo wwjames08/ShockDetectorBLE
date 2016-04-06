@@ -79,8 +79,9 @@ public class UartService extends Service {
 
     /* Shock Sensor Service */
     private static final UUID SHOCK_SERVICE = UUID.fromString("f000aa20-0451-4000-b000-000000000000");
-    private static final UUID SHOCK_DATA_CHAR = UUID.fromString("f000aa21-0451-4000-b000-000000000000");
-    private static final UUID SHOCK_CONFIG_CHAR = UUID.fromString("f000aa22-0451-4000-b000-000000000000");
+    private static final UUID SHOCK_DATA = UUID.fromString("f000aa21-0451-4000-b000-000000000000");
+    private static final UUID SHOCK_THRESHOLD = UUID.fromString("f000aa22-0451-4000-b000-000000000000");
+    private static final UUID SHOCK_DURATION = UUID.fromString("f000aa22-0451-4000-b000-000000000000");
     
    
     // Implements callback methods for GATT events that the app cares about.  For example,
