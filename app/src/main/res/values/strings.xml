@@ -1,5 +1,7 @@
 <resources>
     <string name="app_name">Shock Detector BLE</string>
+    <string name="action_connect">Connect</string>
+    <string name="action_disconnect">Disconnect</string>
     <string name="action_settings">Settings</string>
     <string name="title_activity_settings">Settings</string>
 </resources>

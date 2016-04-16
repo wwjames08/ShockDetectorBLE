@@ -1,6 +1,5 @@
 package edu.uri.nuwc.lpwsds.shockdetectorble;
 
-import android.app.Activity;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -10,6 +9,7 @@ import android.bluetooth.le.BluetoothLeScanner;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
@@ -18,6 +18,7 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.support.v4.content.LocalBroadcastManager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -44,14 +45,17 @@ public class MainActivity extends AppCompatActivity {
     private static final int UART_PROFILE_DISCONNECTED = 21;
     private static final int STATE_OFF = 10;
 
-    UartService mService;
+    private static final String deviceAddress = "";
 
-    Realm realm;
+    private int mState = UART_PROFILE_DISCONNECTED;
+
+    UartService mService;
 
     private RecyclerView mRecyclerView;
     private RecyclerView.Adapter mAdapter;
     private RecyclerView.LayoutManager mLayoutManager;
 
+    private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
     private SparseArray<BluetoothDevice> mDevices;
@@ -79,12 +83,8 @@ public class MainActivity extends AppCompatActivity {
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
-        /*
-         * Bluetooth in Android 4.3 is accessed via the BluetoothManager, rather than
-         * the old static BluetoothAdapter.getInstance()
-         */
-        BluetoothManager manager = (BluetoothManager) getSystemService(BLUETOOTH_SERVICE);
-        mBluetoothAdapter = manager.getAdapter();
+        // Initializes the Bluetooth manager and adapter
+        initialize();
 
         mDevices = new SparseArray<BluetoothDevice>();
 
@@ -112,9 +112,12 @@ public class MainActivity extends AppCompatActivity {
         // as you specify a parent activity in AndroidManifest.xml.
         int id = item.getItemId();
 
-        if (id == R.id.action_settings) {
-            startActivity(new Intent(this, Settings.class));
-            return true;
+        switch (item.getItemId()){
+            case R.id.action_connect:
+                mService.connect(deviceAddress);
+            case R.id.action_settings:
+                startActivity(new Intent(this, Settings.class));
+                return true;
         }
         return super.onOptionsItemSelected(item);
     }
@@ -185,6 +188,28 @@ public class MainActivity extends AppCompatActivity {
         //realm.close();
     }
 
+    /* BLE Operation */
+    /**
+     * Initializes a reference to the local Bluetooth adapter.
+     */
+    public void initialize() {
+        // For API level 18 and above, get a reference to BluetoothAdapter through
+        // BluetoothManager.
+        if (mBluetoothManager == null) {
+            mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+            if (mBluetoothManager == null) {
+                Log.e(TAG, "Unable to initialize BluetoothManager.");
+            }
+        }
+
+        mBluetoothAdapter = mBluetoothManager.getAdapter();
+        if (mBluetoothAdapter == null) {
+            Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
+        }
+    }
+
+
+
     //UART service connected/disconnected
     private ServiceConnection mServiceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder rawBinder) {
@@ -212,6 +237,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    /* Handles new events from BLE service */
     private final BroadcastReceiver UARTStatusChangeReceiver = new BroadcastReceiver() {
 
         public void onReceive(Context context, Intent intent) {
@@ -227,7 +253,7 @@ public class MainActivity extends AppCompatActivity {
                         btnConnectDisconnect.setText("Disconnect");
                         edtMessage.setEnabled(true);
                         btnSend.setEnabled(true);
-                        ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName()+ " - ready");
+                        ((TextView) findViewById(R.id.device_name)).setText(mDevice.getName()+ " - ready");
                         listAdapter.add("["+currentDateTimeString+"] Connected to: "+ mDevice.getName());
                         messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
                         mState = UART_PROFILE_CONNECTED;
@@ -291,8 +317,41 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onBackPressed(){
+    public void onBackPressed() {
+        if (mState == UART_PROFILE_CONNECTED) {
+            Intent startMain = new Intent(Intent.ACTION_MAIN);
+            startMain.addCategory(Intent.CATEGORY_HOME);
+            startMain.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(startMain);
+            showMessage("UART's running in background.\n             Disconnect to exit");
+        } else {
+            new AlertDialog.Builder(this)
+                    .setIcon(android.R.drawable.ic_dialog_alert)
+                    .setTitle("Quit Shock Detector BLE?")
+                    .setMessage("Do you want to quit this Application?")
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                            finish();
+                        }
+                    })
+                    .setNegativeButton("No", null)
+                    .show();
+        }
+    }
 
+    /*** UI functions ***/
+
+    public void setDeviceName(String name){
+        mDeviceName.setText(String.format("%s",name));
+    }
+
+    public void setDeviceStatus(String status){
+        mDeviceStatus.setText(String.format("%s", status));
+    }
+
+    public void setDeviceSignal(String rssi){
+        mDeviceSignal.setText(String.format("%idB",rssi));
     }
 
 }//End Main Activity
