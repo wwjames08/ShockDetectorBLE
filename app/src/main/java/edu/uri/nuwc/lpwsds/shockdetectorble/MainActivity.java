@@ -2,7 +2,6 @@ package edu.uri.nuwc.lpwsds.shockdetectorble;
 
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
-import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -23,7 +22,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
-import android.util.SparseArray;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
@@ -58,7 +56,6 @@ public class MainActivity extends AppCompatActivity {
     private BluetoothManager mBluetoothManager;
     private BluetoothAdapter mBluetoothAdapter;
     private BluetoothLeScanner mBluetoothLeScanner;
-    private SparseArray<BluetoothDevice> mDevices;
 
     private BluetoothGatt mConnectedGatt;
 
@@ -82,11 +79,6 @@ public class MainActivity extends AppCompatActivity {
 
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
-
-        // Initializes the Bluetooth manager and adapter
-        initialize();
-
-        mDevices = new SparseArray<BluetoothDevice>();
 
         /*
          * A progress dialog will be needed while the connection process is
@@ -114,7 +106,7 @@ public class MainActivity extends AppCompatActivity {
 
         switch (item.getItemId()){
             case R.id.action_connect:
-                mService.connect(deviceAddress);
+                mService.connect(deviceAddress); // Connects to a specific BT device
             case R.id.action_settings:
                 startActivity(new Intent(this, Settings.class));
                 return true;
@@ -188,34 +180,12 @@ public class MainActivity extends AppCompatActivity {
         //realm.close();
     }
 
-    /* BLE Operation */
-    /**
-     * Initializes a reference to the local Bluetooth adapter.
-     */
-    public void initialize() {
-        // For API level 18 and above, get a reference to BluetoothAdapter through
-        // BluetoothManager.
-        if (mBluetoothManager == null) {
-            mBluetoothManager = (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
-            if (mBluetoothManager == null) {
-                Log.e(TAG, "Unable to initialize BluetoothManager.");
-            }
-        }
-
-        mBluetoothAdapter = mBluetoothManager.getAdapter();
-        if (mBluetoothAdapter == null) {
-            Log.e(TAG, "Unable to obtain a BluetoothAdapter.");
-        }
-    }
-
-
-
     //UART service connected/disconnected
     private ServiceConnection mServiceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder rawBinder) {
             mService = ((UartService.LocalBinder) rawBinder).getService();
             Log.d(TAG, "onServiceConnected mService= " + mService);
-            if (!mService.initialize()) {
+            if (!mService.initialize()) { // Initializes the Bluetooth Services on device
                 Log.e(TAG, "Unable to initialize Bluetooth");
                 finish();
             }
@@ -223,7 +193,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void onServiceDisconnected(ComponentName classname) {
-            ////     mService.disconnect(mDevice);
+                 mService.disconnect(mDevice);
             mService = null;
         }
     };
@@ -250,12 +220,7 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
                         Log.d(TAG, "UART_CONNECT_MSG");
-                        btnConnectDisconnect.setText("Disconnect");
-                        edtMessage.setEnabled(true);
-                        btnSend.setEnabled(true);
-                        ((TextView) findViewById(R.id.device_name)).setText(mDevice.getName()+ " - ready");
-                        listAdapter.add("["+currentDateTimeString+"] Connected to: "+ mDevice.getName());
-                        messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
+                        //This is where you do stuff when UART is connected.
                         mState = UART_PROFILE_CONNECTED;
                     }
                 });
@@ -265,10 +230,9 @@ public class MainActivity extends AppCompatActivity {
             if (action.equals(UartService.ACTION_GATT_DISCONNECTED)) {
                 runOnUiThread(new Runnable() {
                     public void run() {
+                        //This is where you do stuff when UART is disconnected
                         String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
                         Log.d(TAG, "UART_DISCONNECT_MSG");
-                        //This is where you make a btn
-                        listAdapter.add("["+currentDateTimeString+"] Disconnected to: "+ mDevice.getName());
                         mState = UART_PROFILE_DISCONNECTED;
                         mService.close();
                         //setUiState();
@@ -291,8 +255,7 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             String text = new String(txValue, "UTF-8");
                             String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
-                            listAdapter.add("["+currentDateTimeString+"] RX: "+text);
-                            messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
+                            //This is when new data is available
 
                         } catch (Exception e) {
                             Log.e(TAG, e.toString());
