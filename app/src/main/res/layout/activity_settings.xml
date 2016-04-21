@@ -81,6 +81,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
         <CheckBox
+            android:id="@+id/cb_vibrate"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
         <TextView
@@ -94,6 +95,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
         <CheckBox
+            android:id="@+id/cb_sound"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
         <TextView
@@ -107,6 +109,7 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal">
         <CheckBox
+            android:id="@+id/cb_led"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content" />
         <TextView

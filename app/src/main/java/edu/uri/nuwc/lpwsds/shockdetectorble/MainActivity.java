@@ -2,6 +2,7 @@ package edu.uri.nuwc.lpwsds.shockdetectorble;
 
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
+import android.bluetooth.BluetoothDevice;
 import android.bluetooth.BluetoothGatt;
 import android.bluetooth.BluetoothManager;
 import android.bluetooth.le.BluetoothLeScanner;
@@ -24,11 +25,14 @@ import android.support.v7.widget.RecyclerView;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import java.text.DateFormat;
 import java.util.Date;
+import java.util.List;
+import java.util.Map;
 
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
@@ -63,6 +67,14 @@ public class MainActivity extends AppCompatActivity {
 
     private ProgressDialog mProgress;
 
+    List<BluetoothDevice> deviceList;
+    private DeviceAdapter deviceAdapter;
+    private ServiceConnection onService = null;
+    Map<String, Integer> devRssiValues;
+    private static final long SCAN_PERIOD = 10000; //scanning for 10 seconds
+    private Handler mHandler;
+    private boolean mScanning;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -70,6 +82,27 @@ public class MainActivity extends AppCompatActivity {
         RealmConfiguration realmConfiguration = new RealmConfiguration.Builder(this).build();
         Realm.setDefaultConfiguration(realmConfiguration);
         setProgressBarIndeterminate(true);
+
+        mHandler = new Handler();
+        // Use this check to determine whether BLE is supported on the device.  Then you can
+        // selectively disable BLE-related features.
+        if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
+            Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show();
+            finish();
+        }
+
+        // Initializes a Bluetooth adapter.  For API level 18 and above, get a reference to
+        // BluetoothAdapter through BluetoothManager.
+        final BluetoothManager bluetoothManager =
+                (BluetoothManager) getSystemService(Context.BLUETOOTH_SERVICE);
+        mBluetoothAdapter = bluetoothManager.getAdapter();
+
+        // Checks if Bluetooth is supported on the device.
+        if (mBluetoothAdapter == null) {
+            Toast.makeText(this, R.string.ble_not_supported, Toast.LENGTH_SHORT).show();
+            finish();
+            return;
+        }
 
         mDeviceStatus = (TextView) findViewById(R.id.device_status);
         mDeviceName = (TextView) findViewById(R.id.device_name);
@@ -180,12 +213,55 @@ public class MainActivity extends AppCompatActivity {
         //realm.close();
     }
 
+    /* BLE Scanning stuff */
+    private void scanLeDevice(final boolean enable) {
+        final Button cancelButton = (Button) findViewById(R.id.btn_cancel);
+        if (enable) {
+            // Stops scanning after a pre-defined scan period.
+            mHandler.postDelayed(new Runnable() {
+                @Override
+                public void run() {
+                    mScanning = false;
+                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
+
+                    cancelButton.setText(R.string.scan);
+
+                }
+            }, SCAN_PERIOD);
+
+            mScanning = true;
+            mBluetoothAdapter.startLeScan(mLeScanCallback);
+            cancelButton.setText(R.string.cancel);
+        } else {
+            mScanning = false;
+            mBluetoothAdapter.stopLeScan(mLeScanCallback);
+            cancelButton.setText(R.string.scan);
+        }
+
+    }
+
+    private BluetoothAdapter.LeScanCallback mLeScanCallback =
+            new BluetoothAdapter.LeScanCallback() {
+
+                @Override
+                public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord) {
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+
+                            addDevice(device,rssi);
+                        }
+                    });
+                }
+            };
+
+
     //UART service connected/disconnected
     private ServiceConnection mServiceConnection = new ServiceConnection() {
         public void onServiceConnected(ComponentName className, IBinder rawBinder) {
             mService = ((UartService.LocalBinder) rawBinder).getService();
             Log.d(TAG, "onServiceConnected mService= " + mService);
-            if (!mService.initialize()) { // Initializes the Bluetooth Services on device
+            if (!mService.initialize()) {
                 Log.e(TAG, "Unable to initialize Bluetooth");
                 finish();
             }
@@ -193,7 +269,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
         public void onServiceDisconnected(ComponentName classname) {
-                 mService.disconnect(mDevice);
+            ////     mService.disconnect(mDevice);
             mService = null;
         }
     };
@@ -207,7 +283,6 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    /* Handles new events from BLE service */
     private final BroadcastReceiver UARTStatusChangeReceiver = new BroadcastReceiver() {
 
         public void onReceive(Context context, Intent intent) {
@@ -220,7 +295,12 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
                         Log.d(TAG, "UART_CONNECT_MSG");
-                        //This is where you do stuff when UART is connected.
+                        btnConnectDisconnect.setText("Disconnect");
+                        edtMessage.setEnabled(true);
+                        btnSend.setEnabled(true);
+                        ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName()+ " - ready");
+                        listAdapter.add("["+currentDateTimeString+"] Connected to: "+ mDevice.getName());
+                        messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
                         mState = UART_PROFILE_CONNECTED;
                     }
                 });
@@ -230,9 +310,13 @@ public class MainActivity extends AppCompatActivity {
             if (action.equals(UartService.ACTION_GATT_DISCONNECTED)) {
                 runOnUiThread(new Runnable() {
                     public void run() {
-                        //This is where you do stuff when UART is disconnected
                         String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
                         Log.d(TAG, "UART_DISCONNECT_MSG");
+                        btnConnectDisconnect.setText("Connect");
+                        edtMessage.setEnabled(false);
+                        btnSend.setEnabled(false);
+                        ((TextView) findViewById(R.id.deviceName)).setText("Not Connected");
+                        listAdapter.add("["+currentDateTimeString+"] Disconnected to: "+ mDevice.getName());
                         mState = UART_PROFILE_DISCONNECTED;
                         mService.close();
                         //setUiState();
@@ -255,7 +339,8 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             String text = new String(txValue, "UTF-8");
                             String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
-                            //This is when new data is available
+                            listAdapter.add("["+currentDateTimeString+"] RX: "+text);
+                            messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
 
                         } catch (Exception e) {
                             Log.e(TAG, e.toString());
@@ -272,6 +357,13 @@ public class MainActivity extends AppCompatActivity {
 
         }
     };
+
+    private void service_init() {
+        Intent bindIntent = new Intent(this, UartService.class);
+        bindService(bindIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(UARTStatusChangeReceiver, makeGattUpdateIntentFilter());
+    }
 
     //Creates a short pop up message
     private void showMessage(String msg) {

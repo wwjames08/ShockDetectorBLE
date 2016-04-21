@@ -51,10 +51,12 @@ public class UartService extends Service {
     private BluetoothGatt mBluetoothGatt;
     private int mConnectionState = STATE_DISCONNECTED;
 
+    // Identifier for BT connection states
     private static final int STATE_DISCONNECTED = 0;
     private static final int STATE_CONNECTING = 1;
     private static final int STATE_CONNECTED = 2;
 
+    // Identifier for GATT server states
     public final static String ACTION_GATT_CONNECTED =
             "com.nordicsemi.nrfUART.ACTION_GATT_CONNECTED";
     public final static String ACTION_GATT_DISCONNECTED =
@@ -67,7 +69,12 @@ public class UartService extends Service {
             "com.nordicsemi.nrfUART.EXTRA_DATA";
     public final static String DEVICE_DOES_NOT_SUPPORT_UART =
             "com.nordicsemi.nrfUART.DEVICE_DOES_NOT_SUPPORT_UART";
-    
+    public final static String SHOCK_EVENT_NOT_FOUND =
+            "com.nordicsemi.nrfUART.SHOCK_EVENT_NOT_FOUND";
+    public final static String SHOCK_EVENT_DATA =
+            "com.nordicsemi.nrfUART.SHOCK_EVENT_DATA";
+
+    // UUIDs for the remote device
     public static final UUID TX_POWER_UUID = UUID.fromString("00001804-0000-1000-8000-00805f9b34fb");
     public static final UUID TX_POWER_LEVEL_UUID = UUID.fromString("00002a07-0000-1000-8000-00805f9b34fb");
     public static final UUID CCCD = UUID.fromString("00002902-0000-1000-8000-00805f9b34fb");
@@ -79,6 +86,7 @@ public class UartService extends Service {
 
     /* Shock Sensor Service */
     private static final UUID SHOCK_SERVICE = UUID.fromString("f000aa20-0451-4000-b000-000000000000");
+    private static final UUID SHOCK_EVENT = UUID.fromString("f000aa30-0451-4000-b000-000000000000");
     private static final UUID SHOCK_DATA = UUID.fromString("f000aa21-0451-4000-b000-000000000000");
     private static final UUID SHOCK_THRESHOLD = UUID.fromString("f000aa22-0451-4000-b000-000000000000");
     private static final UUID SHOCK_DURATION = UUID.fromString("f000aa22-0451-4000-b000-000000000000");
@@ -145,6 +153,16 @@ public class UartService extends Service {
                                  final BluetoothGattCharacteristic characteristic) {
         final Intent intent = new Intent(action);
 
+        if (SHOCK_EVENT.equals(characteristic.getUuid())) {
+            if (SHOCK_DATA.equals(characteristic.getUuid())) {
+                intent.putExtra(SHOCK_EVENT_DATA, characteristic.getValue());
+            }else {
+                // Do something when there is no data;
+            }
+
+        }else {
+            // Do something when there is no new event;
+        }
         if (TX_CHAR_UUID.equals(characteristic.getUuid())) {
         	
            // Log.d(TAG, String.format("Received TX: %d",characteristic.getValue() ));
@@ -311,6 +329,19 @@ public class UartService extends Service {
             mBluetoothGatt.writeDescriptor(descriptor);
         }
     }*/
+
+    // Set the SHOCK_EVENT char
+    public void setShockEvent(BluetoothGattCharacteristic characteristic, boolean enabled) {
+        if (mBluetoothAdapter == null || mBluetoothGatt == null) {
+            Log.w(TAG, "BluetoothAdapter not initialized");
+            return;
+        }
+//        BluetoothGattService shockService = mBluetoothGatt.getService(SHOCK_SERVICE);
+//        BluetoothGattCharacteristic shockEvent = shockService.getCharacteristic(SHOCK_EVENT);
+//        mBluetoothGatt.setCharacteristicNotification(shockEvent, true);
+
+        mBluetoothGatt.setCharacteristicNotification(characteristic, true);// Set the char true
+    }
     
     /**
      * Enable TXNotification
