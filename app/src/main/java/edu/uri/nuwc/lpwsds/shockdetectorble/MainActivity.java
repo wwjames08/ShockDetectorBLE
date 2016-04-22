@@ -1,5 +1,6 @@
 package edu.uri.nuwc.lpwsds.shockdetectorble;
 
+import android.app.Activity;
 import android.app.ProgressDialog;
 import android.bluetooth.BluetoothAdapter;
 import android.bluetooth.BluetoothDevice;
@@ -11,6 +12,7 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
@@ -39,15 +41,16 @@ import io.realm.RealmConfiguration;
 
 public class MainActivity extends AppCompatActivity {
 
+    public static final String TAG = "nRFUART";
+
     private static final int REQUEST_SELECT_DEVICE = 1;
     private static final int REQUEST_ENABLE_BT = 2;
     private static final int UART_PROFILE_READY = 10;
-    public static final String TAG = "nRFUART";
     private static final int UART_PROFILE_CONNECTED = 20;
     private static final int UART_PROFILE_DISCONNECTED = 21;
     private static final int STATE_OFF = 10;
 
-    private static final String deviceAddress = "";
+    private static final String mDeviceAddress = "01-23-45-67-89-ab";
 
     private int mState = UART_PROFILE_DISCONNECTED;
 
@@ -67,12 +70,13 @@ public class MainActivity extends AppCompatActivity {
 
     private ProgressDialog mProgress;
 
+    private DataBase mDatabase;
+    BluetoothDevice mDevice;
     List<BluetoothDevice> deviceList;
-    private DeviceAdapter deviceAdapter;
+    //private DeviceAdapter deviceAdapter;
     private ServiceConnection onService = null;
     Map<String, Integer> devRssiValues;
     private static final long SCAN_PERIOD = 10000; //scanning for 10 seconds
-    private Handler mHandler;
     private boolean mScanning;
 
     @Override
@@ -83,7 +87,6 @@ public class MainActivity extends AppCompatActivity {
         Realm.setDefaultConfiguration(realmConfiguration);
         setProgressBarIndeterminate(true);
 
-        mHandler = new Handler();
         // Use this check to determine whether BLE is supported on the device.  Then you can
         // selectively disable BLE-related features.
         if (!getPackageManager().hasSystemFeature(PackageManager.FEATURE_BLUETOOTH_LE)) {
@@ -113,6 +116,8 @@ public class MainActivity extends AppCompatActivity {
         mLayoutManager = new LinearLayoutManager(this);
         mRecyclerView.setLayoutManager(mLayoutManager);
 
+        mDatabase = new DataBase(this);
+
         /*
          * A progress dialog will be needed while the connection process is
          * taking place
@@ -121,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
         mProgress.setIndeterminate(true);
         mProgress.setCancelable(false);
 
+        service_init();
     }
 
     @Override
@@ -135,16 +141,32 @@ public class MainActivity extends AppCompatActivity {
         // Handle action bar item clicks here. The action bar will
         // automatically handle clicks on the Home/Up button, so long
         // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
         switch (item.getItemId()){
-            case R.id.action_connect:
-                mService.connect(deviceAddress); // Connects to a specific BT device
+            case R.id.action_scan:
+                if (!mBluetoothAdapter.isEnabled()) {
+                    Log.i(TAG, "onClick - BT not enabled yet");
+                    Intent enableIntent = new Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE);
+                    startActivityForResult(enableIntent, REQUEST_ENABLE_BT);
+                } else {
+                    if (item.getTitle().equals("Scan")) {
+
+                        //Connect button pressed, open DeviceListActivity class, with popup windows that scan for devices
+                        Intent newIntent = new Intent(MainActivity.this, DeviceListActivity.class);
+                        startActivityForResult(newIntent, REQUEST_SELECT_DEVICE);
+                    } else {
+                        //Disconnect button pressed
+                        if (mDevice != null) {
+                            mService.disconnect();
+                        }
+                    }
+                }
+                return true;
             case R.id.action_settings:
                 startActivity(new Intent(this, Settings.class));
                 return true;
+            default:
+                return super.onOptionsItemSelected(item);
         }
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
@@ -208,53 +230,10 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, ignore.toString());
         }
         unbindService(mServiceConnection);
-        mService.stopSelf();
+       // mService.stopSelf();
         mService= null;
         //realm.close();
     }
-
-    /* BLE Scanning stuff */
-    private void scanLeDevice(final boolean enable) {
-        final Button cancelButton = (Button) findViewById(R.id.btn_cancel);
-        if (enable) {
-            // Stops scanning after a pre-defined scan period.
-            mHandler.postDelayed(new Runnable() {
-                @Override
-                public void run() {
-                    mScanning = false;
-                    mBluetoothAdapter.stopLeScan(mLeScanCallback);
-
-                    cancelButton.setText(R.string.scan);
-
-                }
-            }, SCAN_PERIOD);
-
-            mScanning = true;
-            mBluetoothAdapter.startLeScan(mLeScanCallback);
-            cancelButton.setText(R.string.cancel);
-        } else {
-            mScanning = false;
-            mBluetoothAdapter.stopLeScan(mLeScanCallback);
-            cancelButton.setText(R.string.scan);
-        }
-
-    }
-
-    private BluetoothAdapter.LeScanCallback mLeScanCallback =
-            new BluetoothAdapter.LeScanCallback() {
-
-                @Override
-                public void onLeScan(final BluetoothDevice device, final int rssi, byte[] scanRecord) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-
-                            addDevice(device,rssi);
-                        }
-                    });
-                }
-            };
-
 
     //UART service connected/disconnected
     private ServiceConnection mServiceConnection = new ServiceConnection() {
@@ -265,9 +244,11 @@ public class MainActivity extends AppCompatActivity {
                 Log.e(TAG, "Unable to initialize Bluetooth");
                 finish();
             }
-
+            // Automatically connects to the device upon successful start-up initialization.
+            //mService.connect(mDeviceAddress);
         }
 
+        @Override
         public void onServiceDisconnected(ComponentName classname) {
             ////     mService.disconnect(mDevice);
             mService = null;
@@ -283,6 +264,12 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+    // Handles various events fired by the Service.
+    // ACTION_GATT_CONNECTED: connected to a GATT server.
+    // ACTION_GATT_DISCONNECTED: disconnected from a GATT server.
+    // ACTION_GATT_SERVICES_DISCOVERED: discovered GATT services.
+    // ACTION_DATA_AVAILABLE: received data from the device.  This can be a result of read
+    //                        or notification operations.
     private final BroadcastReceiver UARTStatusChangeReceiver = new BroadcastReceiver() {
 
         public void onReceive(Context context, Intent intent) {
@@ -295,12 +282,12 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
                         Log.d(TAG, "UART_CONNECT_MSG");
-                        btnConnectDisconnect.setText("Disconnect");
-                        edtMessage.setEnabled(true);
-                        btnSend.setEnabled(true);
-                        ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName()+ " - ready");
-                        listAdapter.add("["+currentDateTimeString+"] Connected to: "+ mDevice.getName());
-                        messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
+                        //Do stuff here when BY is connected
+
+//                        ((TextView) findViewById(R.id.deviceName)).setText(mDevice.getName()+ " - ready");
+//                        listAdapter.add("["+currentDateTimeString+"] Connected to: "+ mDevice.getName());
+//                        messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
+
                         mState = UART_PROFILE_CONNECTED;
                     }
                 });
@@ -312,11 +299,9 @@ public class MainActivity extends AppCompatActivity {
                     public void run() {
                         String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
                         Log.d(TAG, "UART_DISCONNECT_MSG");
-                        btnConnectDisconnect.setText("Connect");
-                        edtMessage.setEnabled(false);
-                        btnSend.setEnabled(false);
-                        ((TextView) findViewById(R.id.deviceName)).setText("Not Connected");
-                        listAdapter.add("["+currentDateTimeString+"] Disconnected to: "+ mDevice.getName());
+
+//                        ((TextView) findViewById(R.id.deviceName)).setText("Not Connected");
+//                        listAdapter.add("["+currentDateTimeString+"] Disconnected to: "+ mDevice.getName());
                         mState = UART_PROFILE_DISCONNECTED;
                         mService.close();
                         //setUiState();
@@ -339,8 +324,6 @@ public class MainActivity extends AppCompatActivity {
                         try {
                             String text = new String(txValue, "UTF-8");
                             String currentDateTimeString = DateFormat.getTimeInstance().format(new Date());
-                            listAdapter.add("["+currentDateTimeString+"] RX: "+text);
-                            messageListView.smoothScrollToPosition(listAdapter.getCount() - 1);
 
                         } catch (Exception e) {
                             Log.e(TAG, e.toString());
@@ -358,11 +341,60 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        switch (requestCode) {
+
+            case REQUEST_SELECT_DEVICE:
+                //When the DeviceListActivity return, with the selected device address
+                if (resultCode == Activity.RESULT_OK && data != null) {
+                    String deviceAddress = data.getStringExtra(BluetoothDevice.EXTRA_DEVICE);
+                    mDevice = BluetoothAdapter.getDefaultAdapter().getRemoteDevice(deviceAddress);
+
+                    Log.d(TAG, "... onActivityResultdevice.address==" + mDevice + "mserviceValue" + mService);
+//                    ((TextView) findViewById(R.id.device_name)).setText(mDevice.getName()); //+ " - connecting"
+//                    byte rssival = (byte) devRssiValues.get(deviceAddress).intValue();
+//                    ((TextView) findViewById(R.id.device_signal)).setText(String.valueOf(rssival));
+                    mService.connect(deviceAddress);
+
+
+                }
+                break;
+            case REQUEST_ENABLE_BT:
+                // When the request to enable Bluetooth returns
+                if (resultCode == Activity.RESULT_OK) {
+                    Toast.makeText(this, "Bluetooth has turned on ", Toast.LENGTH_SHORT).show();
+
+                } else {
+                    // User did not enable Bluetooth or an error occurred
+                    Log.d(TAG, "BT not enabled");
+                    Toast.makeText(this, "Problem in BT Turning ON ", Toast.LENGTH_SHORT).show();
+                    finish();
+                }
+                break;
+            default:
+                Log.e(TAG, "wrong request code");
+                break;
+        }
+    }
+
+
     private void service_init() {
         Intent bindIntent = new Intent(this, UartService.class);
         bindService(bindIntent, mServiceConnection, Context.BIND_AUTO_CREATE);
 
         LocalBroadcastManager.getInstance(this).registerReceiver(UARTStatusChangeReceiver, makeGattUpdateIntentFilter());
+    }
+
+    private static IntentFilter makeGattUpdateIntentFilter() {
+        final IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(UartService.ACTION_GATT_CONNECTED);
+        intentFilter.addAction(UartService.ACTION_GATT_DISCONNECTED);
+        intentFilter.addAction(UartService.ACTION_GATT_SERVICES_DISCOVERED);
+        intentFilter.addAction(UartService.ACTION_DATA_AVAILABLE);
+        intentFilter.addAction(UartService.DEVICE_DOES_NOT_SUPPORT_UART);
+        return intentFilter;
     }
 
     //Creates a short pop up message

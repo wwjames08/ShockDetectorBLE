@@ -81,6 +81,11 @@ public class Settings extends AppCompatActivity {
         //Get references to the text fields
         thresholdValue = (EditText) findViewById(R.id.threshold_value);
         durationValue = (NumberPicker) findViewById(R.id.measurement_value);
+
+        int dValue = settings.getInt("durationValue", 0);
+
+        thresholdValue.setText(settings.getString("thresholdValue", "0"));
+        durationValue.setValue(dValue);
     }
 
     @Override
@@ -102,9 +107,9 @@ public class Settings extends AppCompatActivity {
         editor.putString("thresholdValue",thresholdValue.getText().toString());
         editor.putInt("durationValue",durationValue.getValue());
 
-        editor.putBoolean("settingVibrate", mVibrate);
-        editor.putBoolean("settingSound", mSound);
-        editor.putBoolean("settingLed", mLed);
+        editor.putBoolean("settingVibrate", cbVibrate.isChecked());
+        editor.putBoolean("settingSound", cbSound.isChecked());
+        editor.putBoolean("settingLed", cbLed.isChecked());
 
         editor.commit();
     }

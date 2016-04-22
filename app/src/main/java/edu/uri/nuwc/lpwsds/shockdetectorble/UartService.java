@@ -85,11 +85,11 @@ public class UartService extends Service {
     public static final UUID TX_CHAR_UUID = UUID.fromString("6e400003-b5a3-f393-e0a9-e50e24dcca9e");
 
     /* Shock Sensor Service */
-    private static final UUID SHOCK_SERVICE = UUID.fromString("f000aa20-0451-4000-b000-000000000000");
-    private static final UUID SHOCK_EVENT = UUID.fromString("f000aa30-0451-4000-b000-000000000000");
-    private static final UUID SHOCK_DATA = UUID.fromString("f000aa21-0451-4000-b000-000000000000");
-    private static final UUID SHOCK_THRESHOLD = UUID.fromString("f000aa22-0451-4000-b000-000000000000");
-    private static final UUID SHOCK_DURATION = UUID.fromString("f000aa22-0451-4000-b000-000000000000");
+    private static final UUID SHOCK_SERVICE_UUID = UUID.fromString("f000aa20-0451-4000-b000-000000000000");
+    private static final UUID SHOCK__NEW_EVENT_UUID = UUID.fromString("f000aa30-0451-4000-b000-000000000000");
+    private static final UUID SHOCK_DATA_UUID = UUID.fromString("f000aa21-0451-4000-b000-000000000000");
+    private static final UUID SHOCK_THRESHOLD_UUID = UUID.fromString("f000aa22-0451-4000-b000-000000000000");
+    private static final UUID SHOCK_DURATION_UUID = UUID.fromString("f000aa22-0451-4000-b000-000000000000");
     
    
     // Implements callback methods for GATT events that the app cares about.  For example,
@@ -117,7 +117,7 @@ public class UartService extends Service {
         }
 
         @Override
-        // New services discovered
+        // When new services are discovered
         public void onServicesDiscovered(BluetoothGatt gatt, int status) {
             if (status == BluetoothGatt.GATT_SUCCESS) {
             	Log.w(TAG, "mBluetoothGatt = " + mBluetoothGatt );
@@ -153,8 +153,8 @@ public class UartService extends Service {
                                  final BluetoothGattCharacteristic characteristic) {
         final Intent intent = new Intent(action);
 
-        if (SHOCK_EVENT.equals(characteristic.getUuid())) {
-            if (SHOCK_DATA.equals(characteristic.getUuid())) {
+        if (SHOCK__NEW_EVENT_UUID.equals(characteristic.getUuid())) {
+            if (SHOCK_DATA_UUID.equals(characteristic.getUuid())) {
                 intent.putExtra(SHOCK_EVENT_DATA, characteristic.getValue());
             }else {
                 // Do something when there is no data;
@@ -336,7 +336,7 @@ public class UartService extends Service {
             Log.w(TAG, "BluetoothAdapter not initialized");
             return;
         }
-//        BluetoothGattService shockService = mBluetoothGatt.getService(SHOCK_SERVICE);
+//        BluetoothGattService shockService = mBluetoothGatt.getService(SHOCK_SERVICE_UUID);
 //        BluetoothGattCharacteristic shockEvent = shockService.getCharacteristic(SHOCK_EVENT);
 //        mBluetoothGatt.setCharacteristicNotification(shockEvent, true);
 
